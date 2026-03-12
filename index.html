@@ -44,6 +44,16 @@
         .input-box:focus { border-color: #a8c7fa; }
         .send-btn { background: #a8c7fa; color: #041e49; border: none; padding: 0 25px; border-radius: 30px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
         .send-btn:hover { background: #8ab4f8; }
+        /* Mobile Responsive Magic */
+        @media (max-width: 600px) {
+            .main-app { height: 100svh; } /* Stops the mobile keyboard from hiding the input */
+            .header h1 { font-size: 20px; }
+            .new-chat-btn { padding: 8px 12px; font-size: 12px; }
+            .message-bubble { max-width: 95%; font-size: 15px; padding: 10px 14px; }
+            .input-container { padding: 10px; gap: 6px; }
+            .input-box { padding: 12px 16px; font-size: 14px; }
+            .send-btn { padding: 0 16px; font-size: 14px; }
+        }
     </style>
 </head>
 <body>
