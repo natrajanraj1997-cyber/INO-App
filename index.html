@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INO AI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+    <style>
+        /* Gemini-style Dark Mode */
+        body { margin: 0; padding: 0; background-color: #131314; color: #e3e3e3; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+        
+        .main-app { width: 100%; max-width: 900px; display: flex; flex-direction: column; height: 100vh; background: #131314; }
+        
+        /* Top Header */
+        .header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .header h1 { margin: 0; color: #a8c7fa; font-size: 24px; letter-spacing: 1px; }
+        .new-chat-btn { background: #2a2b2e; color: #e3e3e3; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .new-chat-btn:hover { background: #444; }
+
+        /* Scrollable Chat Area */
+        .chat-box { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+        
+        /* Chat Bubbles */
+        .message-row { display: flex; width: 100%; }
+        .user-row { justify-content: flex-end; }
+        .ino-row { justify-content: flex-start; }
+        
+        .message-bubble { max-width: 80%; padding: 12px 18px; line-height: 1.6; font-size: 16px; }
+        
+        /* User Formatting */
+        .user-msg { background: #2a2b2e; color: #e3e3e3; border-radius: 20px 20px 4px 20px; }
+        
+        /* INO Formatting */
+        .ino-msg { color: #e3e3e3; }
+        .ino-name { font-weight: bold; color: #a8c7fa; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;}
+        
+        /* Code Block Formatting */
+        pre { background: #1e1e20; border: 1px solid #333; padding: 15px; border-radius: 10px; overflow-x: auto; font-family: 'Courier New', Courier, monospace; }
+        code { color: #a8c7fa; font-family: 'Courier New', Courier, monospace; }
+        
+        /* Bottom Input Area */
+        .input-container { padding: 20px; display: flex; gap: 10px; background: #131314; }
+        .input-box { flex-grow: 1; background: #1e1e20; border: 1px solid #333; padding: 16px 20px; border-radius: 30px; color: white; font-size: 16px; outline: none; }
+        .input-box:focus { border-color: #a8c7fa; }
+        .send-btn { background: #a8c7fa; color: #041e49; border: none; padding: 0 25px; border-radius: 30px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        .send-btn:hover { background: #8ab4f8; }
+    </style>
+</head>
+<body>
+
+    <div class="main-app">
+        <div class="header">
+            <h1>INO ✨</h1>
+            <button class="new-chat-btn" onclick="clearChat()">+ New Chat</button>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            </div>
+
+        <div class="input-container">
+            <input type="text" id="userInput" class="input-box" placeholder="Ask INO anything..." onkeypress="handleEnter(event)">
+            <button class="send-btn" onclick="talkToINO()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        let chatHistory = JSON.parse(localStorage.getItem('ino_chat_history')) || [];
+        const chatBox = document.getElementById('chatBox');
+
+        // Draw UI on load
+        window.onload = () => {
+            if (chatHistory.length === 0) {
+                chatBox.innerHTML = `<div class="message-row ino-row"><div class="message-bubble ino-msg"><div class="ino-name">✨ INO</div>How can I make your day easier?</div></div>`;
+            } else {
+                chatHistory.forEach(msg => appendMessage(msg.role, msg.content));
+            }
+        };
+
+        // Function to build the chat bubbles dynamically
+        function appendMessage(role, content) {
+            const row = document.createElement('div');
+            row.classList.add('message-row');
+            
+            if (role === 'user') {
+                row.classList.add('user-row');
+                row.innerHTML = `<div class="message-bubble user-msg">${content}</div>`;
+            } else {
+                row.classList.add('ino-row');
+                // marked.parse() instantly formats code blocks and bold text!
+                row.innerHTML = `<div class="message-bubble ino-msg"><div class="ino-name">✨ INO</div>${marked.parse(content)}</div>`;
+            }
+            
+            chatBox.appendChild(row);
+            // Auto-scroll to the bottom like a real chat app
+            chatBox.scrollTop = chatBox.scrollHeight; 
+        }
+
+        function clearChat() {
+            chatHistory = [];
+            localStorage.removeItem('ino_chat_history');
+            chatBox.innerHTML = `<div class="message-row ino-row"><div class="message-bubble ino-msg"><div class="ino-name">✨ INO</div>Chat cleared. How can I help?</div></div>`;
+        }
+
+        // Allow sending with the Enter key
+        function handleEnter(event) {
+            if (event.key === 'Enter') talkToINO();
+        }
+
+        async function talkToINO() {
+            const inputField = document.getElementById('userInput');
+            const input = inputField.value.trim();
+            if(!input) return;
+            
+            // 1. Draw User Message
+            chatHistory.push({ role: "user", content: input });
+            appendMessage('user', input);
+            inputField.value = ""; 
+            
+            // 2. Draw Loading Indicator
+            const loadingId = "loading-" + Date.now();
+            const loadingHtml = `<div class="message-row ino-row" id="${loadingId}"><div class="message-bubble ino-msg"><div class="ino-name">✨ INO</div><em>Thinking...</em></div></div>`;
+            chatBox.insertAdjacentHTML('beforeend', loadingHtml);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // 3. Talk to Backend
+                const response = await fetch('http://127.0.0.1:3000/ask-ino', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+
+                const data = await response.json();
+                document.getElementById(loadingId).remove(); // Remove loading state
+                
+                if (data.choices && data.choices.length > 0) {
+                    const aiMessage = data.choices[0].message.content;
+                    chatHistory.push({ role: "assistant", content: aiMessage });
+                    appendMessage('assistant', aiMessage);
+                    localStorage.setItem('ino_chat_history', JSON.stringify(chatHistory));
+                } else {
+                    appendMessage('assistant', "Error: Check the F12 console.");
+                }
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                appendMessage('assistant', "Connection Error. Is the Node server running?");
+            }
+        }
+    </script>
+</body>
+</html>
