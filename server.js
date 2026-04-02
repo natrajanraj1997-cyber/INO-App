@@ -61,34 +61,48 @@ async function submitHordeJob(prompt, sourceImageBase64 = null) {
 }
 
 // ─────────────────────────────────────────────
-//  1. CHAT — Groq llama-3.1-8b-instant (fast)
+//  1. CHAT — Google Gemini 1.5 Pro (Highest Tier)
 // ─────────────────────────────────────────────
 app.post('/ask-ino', async (req, res) => {
     try {
-        const userHistory = req.body.messages;
-        const fullConversation = [
-            {
-                role: 'system',
-                content: `You are INO, an exclusive high-level AI assistant engineered by Natarajan. He works as a web developer and is like a father to you. If anyone asks for his Instagram, reply with: [@_k_i_l_l_e_r_b_o_y__](https://www.instagram.com/_k_i_l_l_e_r_b_o_y__?igsh=MXg0cnc2Z3FrZDVmdA%3D%3D&utm_source=qr). You are a world-class copywriter, coder, and grammar expert. If the user asks you to fix text, make it sound highly professional. Whenever relevant, provide helpful markdown links to real websites. Give clear, highly practical answers.`
-            },
-            ...userHistory
-        ];
+        const userHistory = req.body.messages || [];
+        const systemInstruction = `You are INO, an exclusive high-level AI assistant engineered by Natarajan. He works as a web developer and is like a father to you. If anyone asks for his Instagram, reply with: [@_k_i_l_l_e_r_b_o_y__](https://www.instagram.com/_k_i_l_l_e_r_b_o_y__?igsh=MXg0cnc2Z3FrZDVmdA%3D%3D&utm_source=qr). You are a world-class copywriter, coder, and grammar expert. If the user asks you to fix text, make it sound highly professional. Whenever relevant, provide helpful markdown links to real websites. Give clear, highly practical answers.`;
 
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        // Map OpenAI-style history formats to Gemini's strict structural requirement
+        const contents = userHistory.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : msg.role,
+            parts: [{ text: msg.content }]
+        }));
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'llama-3.1-8b-instant',
-                messages: fullConversation,
-                temperature: 0.7
+                system_instruction: { parts: { text: systemInstruction } },
+                contents: contents,
+                generationConfig: { temperature: 0.7 }
             })
         });
 
         const data = await response.json();
-        res.json(data);
+        
+        // Handle Gemini API specific errors securely
+        if (data.error) {
+            console.error('[GEMINI API ERROR]', data.error);
+            return res.status(500).json({ error: "Failed to connect to INO's Gemini brain." });
+        }
+
+        // We wrap the Gemini response inside an OpenAI-style shape 
+        // to maintain 100% backwards compatibility with the frontend UI codebase!
+        const openaiFormattedData = {
+            choices: [{
+                message: {
+                    content: data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble analyzing that request at the moment."
+                }
+            }]
+        };
+
+        res.json(openaiFormattedData);
     } catch (error) {
         console.error('[CHAT ERROR]', error);
         res.status(500).json({ error: "Failed to connect to INO's chat brain." });
