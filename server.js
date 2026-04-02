@@ -207,7 +207,7 @@ app.get('/image-status/:jobId', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-//  5. CODE — Groq llama-3.3-70b (powerful)
+//  5. CODE — Google Gemini 2.5 Flash (Elite Logic)
 // ─────────────────────────────────────────────
 app.post('/generate-code', async (req, res) => {
     try {
@@ -216,26 +216,29 @@ app.post('/generate-code', async (req, res) => {
 
         const systemPrompt = `You are INO Code, an elite senior software engineer. Produce clean, production-ready, well-commented code. Always wrap code in a fenced markdown code block with the correct language tag. Language: ${language || 'auto-detect'}.`;
 
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.3,
-                max_tokens: 4096
+                system_instruction: { parts: { text: systemPrompt } },
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                generationConfig: { 
+                    temperature: 0.3,
+                    maxOutputTokens: 4096 
+                }
             })
         });
 
         const data = await response.json();
-        if (data.choices && data.choices[0]) {
-            res.json({ code: data.choices[0].message.content });
+        
+        if (data.error) {
+            console.error('[GEMINI CODE ERROR]', data.error);
+            return res.status(500).json({ error: 'Failed to generate code.' });
+        }
+
+        const generatedContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (generatedContent) {
+            res.json({ code: generatedContent });
         } else {
             res.status(500).json({ error: 'No code generated.', details: data });
         }
