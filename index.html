@@ -640,18 +640,8 @@
 // ════════════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════════════
-// Global fetch override to bypass localtunnel warning screen
-const originalFetch = window.fetch;
-window.fetch = async function() {
-    let [resource, config] = arguments;
-    if (!config) config = {};
-    if (!config.headers) config.headers = {};
-    config.headers['Bypass-Tunnel-Reminder'] = 'true';
-    return originalFetch(resource, config);
-};
-
-// Target secure tunnel pointing to your PC
-const BASE_URL = 'https://ino-ai-backend-v3-natarajan.loca.lt';
+// Target secure stable tunnel pointing to your PC (Cloudflare)
+const BASE_URL = 'https://donald-tide-coordination-acne.trycloudflare.com';
 
 // ════════════════════════════════════════════════════
 //  TAB NAVIGATION
