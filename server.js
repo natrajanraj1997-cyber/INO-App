@@ -50,7 +50,7 @@ async function submitHordeJob(prompt, sourceImageBase64 = null) {
             'Client-Agent': HORDE_AGENT
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(60000)
     });
 
     if (!res.ok) {
@@ -140,7 +140,7 @@ app.get('/image-status/:jobId', async (req, res) => {
 
         const checkRes = await fetch(`https://stablehorde.net/api/v2/generate/check/${jobId}`, {
             headers: { 'apikey': HORDE_KEY, 'Client-Agent': HORDE_AGENT },
-            signal: AbortSignal.timeout(10000)
+            signal: AbortSignal.timeout(60000)
         });
 
         if (!checkRes.ok) {
@@ -164,7 +164,7 @@ app.get('/image-status/:jobId', async (req, res) => {
         // Job done — fetch the actual image
         const resultRes = await fetch(`https://stablehorde.net/api/v2/generate/status/${jobId}`, {
             headers: { 'apikey': HORDE_KEY, 'Client-Agent': HORDE_AGENT },
-            signal: AbortSignal.timeout(10000)
+            signal: AbortSignal.timeout(60000)
         });
         const result = await resultRes.json();
 
@@ -176,7 +176,7 @@ app.get('/image-status/:jobId', async (req, res) => {
         const imgUrl = result.generations[0].img;
         
         // Fetch the actual image from the URL
-        const imgRes = await fetch(imgUrl, { signal: AbortSignal.timeout(30000) });
+        const imgRes = await fetch(imgUrl, { signal: AbortSignal.timeout(60000) });
         if (!imgRes.ok) {
             throw new Error(`Failed to fetch image: ${imgRes.status}`);
         }
@@ -235,7 +235,7 @@ app.post('/generate-code', async (req, res) => {
 //  START SERVER
 // ─────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`
 ╔═══════════════════════════════════════════╗
 ║     INO AI PLATFORM — Backend v3.1       ║
