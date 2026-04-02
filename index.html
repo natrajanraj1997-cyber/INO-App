@@ -640,8 +640,18 @@
 // ════════════════════════════════════════════════════
 //  CONFIG
 // ════════════════════════════════════════════════════
-// Relative URL — works on localhost AND on Render automatically
-const BASE_URL = '';
+// Global fetch override to bypass localtunnel warning screen
+const originalFetch = window.fetch;
+window.fetch = async function() {
+    let [resource, config] = arguments;
+    if (!config) config = {};
+    if (!config.headers) config.headers = {};
+    config.headers['Bypass-Tunnel-Reminder'] = 'true';
+    return originalFetch(resource, config);
+};
+
+// Target secure tunnel pointing to your PC
+const BASE_URL = 'https://ino-app-backend-2026.loca.lt';
 
 // ════════════════════════════════════════════════════
 //  TAB NAVIGATION
