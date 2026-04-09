@@ -4,13 +4,17 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-app.use(cors());
+
+// CORS - Allow GitHub Pages and localhost
+app.use(cors({
+    origin: ['https://natrajanraj1997-cyber.github.io', 'http://localhost:3000', 'http://127.0.0.1:5500'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false
+}));
+
 // Increase JSON body limit for base64 image uploads (up to 10MB)
 app.use(express.json({ limit: '10mb' }));
-
-// Serve frontend — access at: http://localhost:3000
-app.use(express.static(path.join(__dirname)));
-
 // Silence favicon 404
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
